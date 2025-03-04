@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  role       String  
+  faceId     String   @unique 
+  carreer    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt()
+  accesses   Access[]
+  images     Image[]
+}
+
+model Access {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  timestamp  DateTime @default(now())
+}
+
+model Image {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  imagePath  String 
+  createdAt  DateTime @default(now())
+}
