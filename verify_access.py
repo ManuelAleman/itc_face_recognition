@@ -1,8 +1,11 @@
 import cv2
 import face_recognition
+import datetime
 from config.db import db
 from models.user import get_all_users_encodings
-from models.access import create_access
+from models.access import create_access, get_last_access_from_user
+
+ACCESS_INTERVAL = 30
 
 async def verify_access_camera():
     await db.connect()
@@ -36,8 +39,30 @@ async def verify_access_camera():
             if True in matches:
                 matched_idx = matches.index(True)
                 user = known_users[tuple(known_encodings[matched_idx])]
-                await create_access(user_id=user.id)
-                print(f"✅ Acceso autorizado para {user.name} ({user.carreer}).")
+                
+                now = datetime.datetime.now(datetime.timezone.utc)
+                last_access = await get_last_access_from_user(user.id)
+                
+                if last_access:
+                    last_access_time = last_access.timestamp.astimezone(datetime.timezone.utc) 
+                    time_diff = (now - last_access_time).total_seconds()
+
+                    print(f"Current Time: {now}")
+                    print(f"Last Access Time: {last_access_time}")
+                    print(f"Time Difference: {time_diff} seconds")
+
+                    if time_diff > ACCESS_INTERVAL:
+                        await create_access(user_id=user.id)
+                        print("ultimo acceso", last_access_time)
+                        print(f"✅ Acceso autorizado para {user.name} ({user.carreer}).")
+                    else:
+                        print(f"⏳ Espera {ACCESS_INTERVAL} segundos entre accesos.")
+
+                else:
+                    
+                    await create_access(user_id=user.id)
+                    print(f"✅ Acceso autorizado para {user.name} ({user.carreer}).")
+
             else:
                 print("🚫 Acceso denegado: Usuario no reconocido.")
         else:
