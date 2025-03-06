@@ -3,3 +3,5 @@ face_recognition/
 dataset/
 __pycache__/
 face_recognition_models/
+
+prisma/migrations/*

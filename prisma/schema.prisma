@@ -8,29 +8,30 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  role       String  
-  faceEncoding  Float[]
-  carreer    String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt()
-  accesses   Access[]
-  images     Image[]
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  role         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  faceEncoding Float[]
+  nControl     String   @unique
+  career       String
+  accesses     Access[]
+  images       Image[]
 }
 
 model Access {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  timestamp  DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Image {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  imagePath  String 
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  imagePath String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }

@@ -11,7 +11,7 @@ def generate_face_encoding(image_path: str):
         raise Exception("No se detectó ninguna cara en la imagen.")
 
 
-async def create_user(name: str, email: str, role: str, career: str, image_path: str):
+async def create_user(nControl: str, name: str, email: str, role: str, career: str, image_path: str):
     face_encoding = generate_face_encoding(image_path)
     
     face_encoding_list = face_encoding.tolist()
@@ -19,10 +19,11 @@ async def create_user(name: str, email: str, role: str, career: str, image_path:
     client = db.get_client()
     user = await client.user.create(
         data={
+            'nControl': nControl,
             'name': name,
             'email': email,
             'role': role,
-            'carreer': career,
+            'career': career,
             'faceEncoding': face_encoding_list,
         }
     )
