@@ -1,13 +1,16 @@
 import asyncio
 from config.db import db
-from models.access import create_access
-from verify_access import verify_access_camera
-from add_user import add_new_user
+from access_control_area.verify_access import verify_access_camera
+from access_control_area.add_user import add_new_user
+
 async def main():
     await db.connect()
-    
-    await add_new_user()
-    #await verify_access_camera()
+
+    #await add_new_user()
+
+    await verify_access_camera()
+
+    # await test_dlib()
 
     await db.disconnect()
 
