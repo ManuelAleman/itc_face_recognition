@@ -1,112 +1,88 @@
 import cv2
 import face_recognition
-import datetime
-from config.db import db
-from models.user import get_all_users_encodings
-from models.access import create_access, get_last_access_from_user
+import numpy as np
+import logging
+from models.images import get_images
+from models.access import create_access
 
-ACCESS_INTERVAL = 30
-EYE_AR_THRESH = 0.2  
-PROCESS_INTERVAL = 5  
-FRAME_RESIZE_SCALE = 0.5  
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(message)s')
 
-def eye_aspect_ratio(eye_points):
-    A = euclidean_distance(eye_points[1], eye_points[5])
-    B = euclidean_distance(eye_points[2], eye_points[4])
-    C = euclidean_distance(eye_points[0], eye_points[3])
-    ear = (A + B) / (2.0 * C)
-    return ear
-
-def euclidean_distance(point1, point2):
-    return ((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2) ** 0.5
-
-def detect_blink(face_landmarks):
-    left_eye = face_landmarks['left_eye']
-    right_eye = face_landmarks['right_eye']
-    left_eye_ratio = eye_aspect_ratio(left_eye)
-    right_eye_ratio = eye_aspect_ratio(right_eye)
-
-    if left_eye_ratio < EYE_AR_THRESH or right_eye_ratio < EYE_AR_THRESH:
+def liveness_check(face_location, prev_locations):
+    """Verifica si la persona se ha movido lo suficiente entre cuadros."""
+    if not prev_locations:
         return True
-    return False
+    return any(abs(prev[0] - face_location[0]) > 5 or abs(prev[1] - face_location[1]) > 5 for prev in prev_locations)
 
-async def verify_access_camera():
-    await db.connect()
-    
-    video_capture = cv2.VideoCapture(0)
-    print("Presiona 'q' para salir.")
-    
-    users = await get_all_users_encodings()
-    known_encodings = [user.faceEncoding for user in users]
-    known_users = {tuple(user.faceEncoding): user for user in users}
-    
-    face_detected = False
-    frame_counter = 0  
-    
+async def start_camera():
+    images = await get_images()
+    known_face_encodings = [img.faceEncoding for img in images]
+    known_face_names = [img.user.name for img in images]
+    known_face_ids = [img.user.id for img in images]
+
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        logging.error("No se pudo acceder a la cámara.")
+        return
+
+    cap.set(3, 640) 
+    cap.set(4, 480) 
+
+    prev_face_locations = []
+    verification_counts = {}
+    granted_access = set()
+
     while True:
-        ret, frame = video_capture.read()
+        ret, frame = cap.read()
         if not ret:
-            print("Error al acceder a la cámara.")
+            logging.error("No se pudo capturar el cuadro.")
             break
-        
-    
-        small_frame = cv2.resize(frame, None, fx=FRAME_RESIZE_SCALE, fy=FRAME_RESIZE_SCALE)
+
+        small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
         rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
-        frame_counter += 1
-        if frame_counter % PROCESS_INTERVAL == 0:  
-            encodings_to_validate = face_recognition.face_encodings(rgb_frame)
-            face_landmarks_list = face_recognition.face_landmarks(rgb_frame)
-            
-            if encodings_to_validate:
-                if not face_detected:
-                    print("👤 Rostro detectado. Procesando...")
-                    face_detected = True
-                
-                encoding_to_validate = encodings_to_validate[0]
-                matches = face_recognition.compare_faces(known_encodings, encoding_to_validate)
-                
-                if True in matches:
-                    matched_idx = matches.index(True)
-                    user = known_users[tuple(known_encodings[matched_idx])]
-                    
-                
-                    liveness_detected = False
-                    for face_landmarks in face_landmarks_list:
-                        if detect_blink(face_landmarks):
-                            liveness_detected = True
-                            break
-                    
-                    if not liveness_detected:
-                        continue
-                    
-                    now = datetime.datetime.now(datetime.timezone.utc)
-                    last_access = await get_last_access_from_user(user.id)
-                    
-                    if last_access:
-                        last_access_time = last_access.timestamp.astimezone(datetime.timezone.utc)
-                        time_diff = (now - last_access_time).total_seconds()
-                        if time_diff > ACCESS_INTERVAL:
-                            await create_access(user_id=user.id)
-                            print(f"✅ Acceso autorizado para {user.name} ({user.career}).")
-                        else:
-                            print(f"⏳ Espera {ACCESS_INTERVAL} segundos entre accesos.")
-                    else:
-                        await create_access(user_id=user.id)
-                        print(f"✅ Acceso autorizado para {user.name} ({user.career}).")
-                else:
-                    print("🚫 Acceso denegado: Usuario no reconocido.")
-            else:
-                if face_detected:
-                    print("🔍 Rostro perdido. Esperando detección...")
-                    face_detected = False
-        
-        # Mostrar el video en una ventana
-        cv2.imshow('Verificación de acceso', small_frame)  # Mostrar el frame reducido para fluidez
-        
+        face_locations = face_recognition.face_locations(rgb_frame, model="hog")
+        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations) if face_locations else []
+
+        face_names = []
+
+        for face_encoding, face_location in zip(face_encodings, face_locations):
+            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+            best_match_index = np.argmin(face_distances) if matches else None
+
+            name = "Desconocido"
+            liveness = liveness_check(face_location, prev_face_locations)
+
+            if best_match_index is not None and matches[best_match_index]:
+                user_id = known_face_ids[best_match_index]
+                user_name = known_face_names[best_match_index]
+
+                name = user_name  
+
+                if liveness:
+                    verification_counts[user_id] = verification_counts.get(user_id, 0) + 1
+
+                    if verification_counts[user_id] >= 3:  
+                        if user_id not in granted_access:
+                            granted_access.add(user_id)
+                            await create_access(user_id)
+                            logging.info(f"✅ Acceso concedido a: {user_name} (ID: {user_id})")
+
+            face_names.append((face_location, name, liveness))
+
+        prev_face_locations = face_locations
+
+        for (top, right, bottom, left), name, liveness in face_names:
+            top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2  
+            color = (0, 255, 0) if liveness else (0, 0, 255)  
+
+            cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
+            cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+
+        cv2.imshow('Reconocimiento Facial', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-    
-    video_capture.release()
+
+    cap.release()
     cv2.destroyAllWindows()
-    await db.disconnect()
+    logging.info("Cámara apagada.")

@@ -1,16 +1,29 @@
 from config.db import db
 
+from datetime import datetime, timedelta, timezone
+
 async def create_access(user_id: str):
-    
     client = db.get_client()
-    access = await client.access.create(
-        data={
-            'userId': user_id
-        }
+    
+    cooldown_time = timedelta(seconds=60)  
+    now = datetime.now(timezone.utc)
+
+    last_access = await client.access.find_first(
+        where={"userId": user_id},
+        order={"timestamp": "desc"} 
     )
 
-    print(f"Acceso registrado para el usuario: {user_id}")
+    if last_access and (now - last_access.timestamp).total_seconds() < cooldown_time.total_seconds():
+        print(f"⏳ Acceso no registrado (espera {cooldown_time.seconds} segundos) - Usuario: {user_id}")
+        return None  
+
+    access = await client.access.create(
+        data={"userId": user_id}
+    )
+
+    print(f"✅ Acceso registrado para el usuario: {user_id}")
     return access
+
 
 async def get_last_access_from_user(user_id: str):
     client = db.get_client()

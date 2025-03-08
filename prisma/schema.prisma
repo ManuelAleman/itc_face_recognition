@@ -8,17 +8,16 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  role         String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  faceEncoding Float[]
-  nControl     String   @unique
-  career       String
-  accesses     Access[]
-  images       Image[]
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  nControl  String   @unique
+  career    String
+  accesses  Access[]
+  images    Image[]
 }
 
 model Access {
@@ -29,9 +28,10 @@ model Access {
 }
 
 model Image {
-  id        String   @id @default(uuid())
-  userId    String
-  imagePath String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  id           String   @id @default(uuid())
+  userId       String
+  imagePath    String
+  createdAt    DateTime @default(now())
+  faceEncoding Json
+  user         User     @relation(fields: [userId], references: [id])
 }

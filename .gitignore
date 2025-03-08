@@ -6,5 +6,3 @@ face_recognition_models/
 
 prisma/migrations/*
 lib-test/
-
-shape_predictor_68_face_landmarks.dat
