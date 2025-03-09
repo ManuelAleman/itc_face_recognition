@@ -18,8 +18,8 @@ async def add_new_user():
 
 
 async def add_users_from_dataset():
-    data = pd.read_excel("/Users/manuelaleman/Desktop/face_recognition/Datos_Investigacion.xlsx")
-    image_folder_path = "/Users/manuelaleman/Desktop/face_recognition/imagenes"
+    data = pd.read_excel("Datos_Investigacion.xlsx")
+    image_folder_path = "imagenes"
     
     for row in data.itertuples(index=False):
         user_name = row.name.lower()
