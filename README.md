@@ -17,7 +17,7 @@ Este proyecto configura un entorno de desarrollo utilizando **Docker**, **Python
 Primero, debes levantar los servicios definidos en el archivo `docker-compose.yml` utilizando el siguiente comando:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ## 2. Crear y activar el entorno virtual
