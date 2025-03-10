@@ -12,16 +12,17 @@ async def create_access(user_id: str):
         where={"userId": user_id},
         order={"timestamp": "desc"} 
     )
-
+    user = await client.user.find_first(where={"id": user_id})
     if last_access and (now - last_access.timestamp).total_seconds() < cooldown_time.total_seconds():
-        print(f"⏳ Acceso no registrado (espera {cooldown_time.seconds} segundos) - Usuario: {user_id}")
+        print(f"⏳ Acceso no registrado (espera {cooldown_time.seconds} segundos) - Usuario: {user.name}")
         return None  
 
     access = await client.access.create(
         data={"userId": user_id}
     )
 
-    print(f"✅ Acceso registrado para el usuario: {user_id}")
+
+    print(f"✅ Acceso registrado para el usuario: {user.name}")
     return access
 
 
