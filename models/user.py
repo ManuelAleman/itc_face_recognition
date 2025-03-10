@@ -21,7 +21,6 @@ async def create_user(nControl: str, name: str, email: str, role: str, career: s
 async def get_user_by_face_encodingd(face_encoding_list: list):
     client = db.get_client()
     
-    
     images = await client.image.find_many()
 
     min_distance = 0.6
@@ -37,3 +36,7 @@ async def get_user_by_face_encodingd(face_encoding_list: list):
 
     return best_match
 
+async def get_user_info(user_id: str):
+    client = db.get_client()
+    user = await client.user.find_first(where={'id': user_id})
+    return user

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 async def create_access(user_id: str):
     client = db.get_client()
     
-    cooldown_time = timedelta(seconds=10)  
+    cooldown_time = timedelta(seconds=5)  
     now = datetime.now(timezone.utc)
 
     last_access = await client.access.find_first(

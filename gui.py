@@ -1,21 +1,22 @@
 import tkinter as tk
 from tkinter import Label, Frame, font
 from PIL import Image, ImageTk
-from access_control_area.FaceRecognition import FaceRecognition
 import asyncio
-from config.db import db
 import cv2
+from access_control_area.FaceRecognition import FaceRecognition
+from config.db import db
 
 class FaceRecognitionApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Sistema de Reconocimiento Facial - Instituto Tecnológico de Culiacán")
-        self.root.geometry("800x600")
+        self.root.geometry("1000x600")
         self.root.configure(bg="#003366")
-        self.root.minsize(800, 600)
+        self.root.minsize(1000, 600)
 
         self.title_font = font.Font(family="Helvetica", size=18, weight="bold")
-        self.status_font = font.Font(family="Arial", size=14)
+        self.status_font = font.Font(family="Arial", size=14, weight="bold")
+        self.user_info_font = font.Font(family="Arial", size=12)
 
         self.main_frame = Frame(self.root, bg="#003366")
         self.main_frame.pack(fill="both", expand=True, padx=20, pady=20)
@@ -35,17 +36,30 @@ class FaceRecognitionApp:
         self.video_label = Label(self.camera_frame, bg="#F0F0F0")
         self.video_label.pack(fill="both", expand=True, padx=10, pady=10)
 
-        self.status_frame = Frame(self.main_frame, bg="#003366")
-        self.status_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=(10, 0))
+        self.right_panel_frame = Frame(self.main_frame, bg="#F0F0F0", bd=2, relief="solid", width=300)
+        self.right_panel_frame.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
+
+        
+        self.user_nControl_label = Label(self.right_panel_frame, text="ID: N/A", font=self.user_info_font, fg="#003366", bg="#e0e0e0", relief="solid", padx=10, pady=5)
+        self.user_nControl_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+
+        self.user_career_label = Label(self.right_panel_frame, text="Carrera: N/A", font=self.user_info_font, fg="#003366", bg="#e0e0e0", relief="solid", padx=10, pady=5)
+        self.user_career_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+
+        self.user_name_label = Label(self.right_panel_frame, text="Nombre: No reconocido", font=self.user_info_font, fg="#003366", bg="#e0e0e0", relief="solid", padx=10, pady=5)
+        self.user_name_label.grid(row=2, column=0, padx=10, pady=5, sticky="w")
+
+        self.user_email_label = Label(self.right_panel_frame, text="Correo: N/A", font=self.user_info_font, fg="#003366", bg="#e0e0e0", relief="solid", padx=10, pady=5)
+        self.user_email_label.grid(row=3, column=0, padx=10, pady=5, sticky="w")
 
         self.status_label = Label(
-            self.status_frame,
+            self.main_frame,
             text="Inicializando...",
             font=self.status_font,
             fg="#FFFFFF",
             bg="#003366"
         )
-        self.status_label.pack(fill="x", pady=10)
+        self.status_label.grid(row=2, column=0, columnspan=2, pady=10)
 
         self.main_frame.grid_rowconfigure(1, weight=1)
         self.main_frame.grid_columnconfigure(0, weight=1)
@@ -71,9 +85,22 @@ class FaceRecognitionApp:
             self.status_label.config(text="Error: No se pudo capturar el cuadro.")
             return
 
-        status_text = self.loop.run_until_complete(self.face_recognition.recognize_faces(frame))
+        status_text, user_info = self.loop.run_until_complete(self.face_recognition.recognize_faces(frame))
         self.status_label.config(text=status_text)
 
+        
+        if user_info:
+            self.user_nControl_label.config(text=f"nControl: {user_info.nControl}")
+            self.user_career_label.config(text=f"Carrera: {user_info.career}")
+            self.user_name_label.config(text=f"Nombre: {user_info.name}")
+            self.user_email_label.config(text=f"Correo: {user_info.email}")
+        else:
+            self.user_nControl_label.config(text="nControl: N/A")
+            self.user_career_label.config(text="Carrera: N/A")
+            self.user_name_label.config(text="Nombre: No reconocido")
+            self.user_email_label.config(text="Correo: N/A")
+
+        
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=img)
@@ -82,17 +109,7 @@ class FaceRecognitionApp:
 
         self.root.after(10, self.update_frame)
 
-    def on_close(self):
-        self.face_recognition.cap.release()
-        self.loop.run_until_complete(self.stop_db_connection())
-        cv2.destroyAllWindows()
-        self.root.destroy()
-
-    async def stop_db_connection(self):
-        await db.disconnect()
-
 if __name__ == "__main__":
     root = tk.Tk()
     app = FaceRecognitionApp(root)
-    root.protocol("WM_DELETE_WINDOW", app.on_close)
     root.mainloop()
