@@ -2,16 +2,11 @@ import cv2
 import face_recognition
 import numpy as np
 import logging
+import time
 from models.images import get_images
 from models.access import create_access
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(message)s')
-
-def liveness_check(face_location, prev_locations):
-    """Verifica si la persona se ha movido lo suficiente entre cuadros."""
-    if not prev_locations:
-        return True
-    return any(abs(prev[0] - face_location[0]) > 5 or abs(prev[1] - face_location[1]) > 5 for prev in prev_locations)
 
 async def start_camera():
     images = await get_images()
@@ -24,12 +19,13 @@ async def start_camera():
         logging.error("No se pudo acceder a la cámara.")
         return
 
-    cap.set(3, 640) 
-    cap.set(4, 480) 
+    cap.set(3, 640)
+    cap.set(4, 480)
 
-    prev_face_locations = []
-    verification_counts = {}
-    granted_access = set()
+    verification_time = 3  
+    user_verification_time = {} 
+    access_granted_time = None 
+    access_cooldown = 5  
 
     while True:
         ret, frame = cap.read()
@@ -44,40 +40,52 @@ async def start_camera():
         face_encodings = face_recognition.face_encodings(rgb_frame, face_locations) if face_locations else []
 
         face_names = []
+        detected_user_id = None
 
-        for face_encoding, face_location in zip(face_encodings, face_locations):
-            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-            best_match_index = np.argmin(face_distances) if matches else None
+        
+        if access_granted_time is None or (time.time() - access_granted_time) >= access_cooldown:
+            for face_encoding, face_location in zip(face_encodings, face_locations):
+                matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+                face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+                best_match_index = np.argmin(face_distances) if matches else None
 
-            name = "Desconocido"
-            liveness = liveness_check(face_location, prev_face_locations)
+                name = "Verificando..."
+                status_text = "Verificando..."
 
-            if best_match_index is not None and matches[best_match_index]:
-                user_id = known_face_ids[best_match_index]
-                user_name = known_face_names[best_match_index]
+                if best_match_index is not None and matches[best_match_index]:
+                    user_id = known_face_ids[best_match_index]
+                    user_name = known_face_names[best_match_index]
+                    detected_user_id = user_id
 
-                name = user_name  
+                    
+                    if user_id not in user_verification_time:
+                        user_verification_time[user_id] = time.time()
 
-                if liveness:
-                    verification_counts[user_id] = verification_counts.get(user_id, 0) + 1
+                    
+                    if time.time() - user_verification_time[user_id] >= verification_time:
+                        await create_access(user_id)
+                        logging.info(f"✅ Acceso concedido a: {user_name} (ID: {user_id})")
+                        name = user_name
+                        status_text = "Acceso concedido"
+                        user_verification_time.pop(user_id) 
+                        access_granted_time = time.time()  
+                    else:
+                        status_text = "Verificando..."
+                else:
+                    user_verification_time = {k: v for k, v in user_verification_time.items() if v + verification_time > time.time()}
 
-                    if verification_counts[user_id] >= 3:  
-                        if user_id not in granted_access:
-                            granted_access.add(user_id)
-                            await create_access(user_id)
-                            logging.info(f"✅ Acceso concedido a: {user_name} (ID: {user_id})")
+                face_names.append((face_location, name, status_text))
 
-            face_names.append((face_location, name, liveness))
+       
+        for (face_location, name, status_text) in face_names:
+            if face_location:
+                top, right, bottom, left = face_location
+                top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2
+                color = (0, 255, 0) if name != "Verificando..." else (0, 255, 255)
 
-        prev_face_locations = face_locations
-
-        for (top, right, bottom, left), name, liveness in face_names:
-            top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2  
-            color = (0, 255, 0) if liveness else (0, 0, 255)  
-
-            cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
-            cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+                cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
+                cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+                cv2.putText(frame, status_text, (left, bottom + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
         cv2.imshow('Reconocimiento Facial', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
