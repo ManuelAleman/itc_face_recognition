@@ -6,7 +6,7 @@ async def main():
     await db.connect()
     
     #await add_new_user()
-    #await add_users_from_dataset()
+    await add_users_from_dataset()
 
     await db.disconnect()
 
