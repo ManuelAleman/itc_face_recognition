@@ -33,3 +33,13 @@ async def get_last_access_from_user(user_id: str):
     )
     access_records.sort(key=lambda x: x.timestamp, reverse=True)
     return access_records[0] if access_records else None
+
+async def log_unauthorized_access(imagePath: str):
+    client = db.get_client()
+    
+    unauthorize_access = await client.unauthorizedaccess.create( 
+        data= {
+            "imagePath": imagePath
+        }
+    )
+    return unauthorize_access

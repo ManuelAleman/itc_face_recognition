@@ -35,3 +35,9 @@ model Image {
   faceEncoding Json
   user         User     @relation(fields: [userId], references: [id])
 }
+
+model UnauthorizedAccess {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now())
+  imagePath String
+}

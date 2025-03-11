@@ -39,7 +39,6 @@ class FaceRecognitionApp:
         self.right_panel_frame = Frame(self.main_frame, bg="#F0F0F0", bd=2, relief="solid", width=300)
         self.right_panel_frame.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
 
-        
         self.user_nControl_label = Label(self.right_panel_frame, text="ID: N/A", font=self.user_info_font, fg="#003366", bg="#e0e0e0", relief="solid", padx=10, pady=5)
         self.user_nControl_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
 
@@ -74,6 +73,7 @@ class FaceRecognitionApp:
 
         self.status_label.config(text="Sistema iniciado correctamente.")
         self.update_frame()
+        
 
     async def start_db_connection(self):
         await db.connect()
@@ -88,19 +88,16 @@ class FaceRecognitionApp:
         status_text, user_info = self.loop.run_until_complete(self.face_recognition.recognize_faces(frame))
         self.status_label.config(text=status_text)
 
-        
-        if user_info:
+        if "Verificando usuario" in status_text or not user_info:
+            self.right_panel_frame.grid_remove()
+            self.face_recognition.last_user_info = None
+        elif user_info:
+            self.right_panel_frame.grid()
             self.user_nControl_label.config(text=f"nControl: {user_info.nControl}")
             self.user_career_label.config(text=f"Carrera: {user_info.career}")
             self.user_name_label.config(text=f"Nombre: {user_info.name}")
             self.user_email_label.config(text=f"Correo: {user_info.email}")
-        else:
-            self.user_nControl_label.config(text="nControl: N/A")
-            self.user_career_label.config(text="Carrera: N/A")
-            self.user_name_label.config(text="Nombre: No reconocido")
-            self.user_email_label.config(text="Correo: N/A")
 
-        
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=img)
@@ -108,6 +105,7 @@ class FaceRecognitionApp:
         self.video_label.config(image=imgtk)
 
         self.root.after(10, self.update_frame)
+
 
 if __name__ == "__main__":
     root = tk.Tk()
