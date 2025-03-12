@@ -40,7 +40,7 @@ async def add_users_from_dataset():
                 )
                 
                 for img_file in os.listdir(user_folder):
-                    if img_file.endswith(".jpg"):
+                    if img_file.lower().endswith(".jpg"):
                         image_path = os.path.join(user_folder, img_file)
                         await create_image(user_id=user.id, image_path=image_path)
                 
