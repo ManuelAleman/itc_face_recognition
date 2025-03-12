@@ -7,3 +7,5 @@ face_recognition_models/
 prisma/migrations/*
 lib-test/
 img/
+
+*/.DS_Store
