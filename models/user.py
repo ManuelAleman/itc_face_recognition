@@ -20,7 +20,6 @@ async def create_user(nControl: str, name: str, email: str, role: str, career: s
 async def delete_user(nControl: str):
     client = db.get_client()
     await client.user.delete(where={'nControl': nControl})
-    pass
 
 async def get_user_by_face_encodingd(face_encoding_list: list):
     client = db.get_client()
