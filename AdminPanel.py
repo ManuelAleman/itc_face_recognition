@@ -14,34 +14,34 @@ class AdminPanel(tk.Tk):
         self.geometry("1000x600")
         self.resizable(False, False)
 
-        # Fuente para el título
+        
         self.title_font = font.Font(family="Helvetica", size=18, weight="bold")
         self.title_label = tk.Label(self, text="Ingresar nuevo Usuario", font=self.title_font)
         self.title_label.pack(pady=20)
 
-        # Marco para el formulario
+        
         self.form_frame = Frame(self)
         self.form_frame.pack(pady=20)
 
-        # Número de control
+        
         self.ncontrol_label = tk.Label(self.form_frame, text="Número de control:")
         self.ncontrol_label.grid(row=0, column=0, padx=10, pady=5, sticky="e")
         self.ncontrol_entry = tk.Entry(self.form_frame)
         self.ncontrol_entry.grid(row=0, column=1, padx=10, pady=5)
 
-        # Nombre
+        
         self.name_label = tk.Label(self.form_frame, text="Nombre:")
         self.name_label.grid(row=1, column=0, padx=10, pady=5, sticky="e")
         self.name_entry = tk.Entry(self.form_frame)
         self.name_entry.grid(row=1, column=1, padx=10, pady=5)
 
-        # Correo
+        
         self.email_label = tk.Label(self.form_frame, text="Correo:")
         self.email_label.grid(row=2, column=0, padx=10, pady=5, sticky="e")
         self.email_entry = tk.Entry(self.form_frame)
         self.email_entry.grid(row=2, column=1, padx=10, pady=5)
 
-        # Rol
+        
         self.role_label = tk.Label(self.form_frame, text="Rol:")
         self.role_label.grid(row=3, column=0, padx=10, pady=5, sticky="e")
         self.role_combo = ttk.Combobox(self.form_frame, values=["Estudiante", "Docente", "Administrativo", "Otro"])
@@ -49,7 +49,7 @@ class AdminPanel(tk.Tk):
         self.role_combo.grid(row=3, column=1, padx=10, pady=5)
         self.role_combo.bind("<<ComboboxSelected>>", self.show_c)
 
-        # Carrera
+        
         self.career_label = tk.Label(self.form_frame, text="Carrera:")
         self.career_label.grid(row=4, column=0, padx=10, pady=5, sticky="e")
         self.career_entry = ttk.Combobox(self.form_frame, values=[
@@ -58,7 +58,7 @@ class AdminPanel(tk.Tk):
             "Ingenieria Mecanica", "Ingenieria Mecatronica", "Ingenieria en Sistemas Computacionales", "Ingenieria en TIC"])
         self.career_entry.grid(row=4, column=1, padx=10, pady=5)
 
-        # Botones
+        
         self.button_frame = Frame(self)
         self.button_frame.pack(pady=20)
 
@@ -71,7 +71,7 @@ class AdminPanel(tk.Tk):
         self.btn_guardar = ttk.Button(self.button_frame, text="Guardar", command=self.guardar_usuario_sync)
         self.btn_guardar.grid(row=0, column=2, padx=10)
 
-        # Etiqueta de estado
+        
         self.status_label = tk.Label(self, text="Captura 3 imágenes antes de guardar.", font=("Arial", 12))
         self.status_label.pack(pady=10)
 
@@ -82,7 +82,7 @@ class AdminPanel(tk.Tk):
             self.status_label.config(text="¡Máximo de 3 imágenes alcanzado!", fg="red")
             return
 
-        cap = cv2.VideoCapture(0)  # Abre la cámara
+        cap = cv2.VideoCapture(0) 
         if not cap.isOpened():
             self.status_label.config(text="Error al abrir la cámara.", fg="red")
             return
@@ -97,13 +97,13 @@ class AdminPanel(tk.Tk):
             cv2.imshow("Captura de imagen", frame)
 
             key = cv2.waitKey(1)
-            if key == 32:  # Tecla ESPACIO para capturar imagen
+            if key == 32:  
                 self.imagenes_temporales.append(frame)
                 self.status_label.config(text=f"Imagen {len(self.imagenes_temporales)} capturada", fg="green")
                 if len(self.imagenes_temporales) >= 3:
                     self.status_label.config(text="Imagenes tomadas exitosamente", fg="green")
                     break
-            elif key == 27:  # Tecla ESC para salir
+            elif key == 27: 
                 self.status_label.config(text="Captura de imagen cancelada.", fg="red")
                 break
 
@@ -111,7 +111,7 @@ class AdminPanel(tk.Tk):
         cv2.destroyAllWindows()
 
     def limpiar_formulario(self):
-        # Limpiar todos los campos del formulario
+        
         self.ncontrol_entry.delete(0, tk.END)
         self.name_entry.delete(0, tk.END)
         self.email_entry.delete(0, tk.END)
@@ -125,7 +125,7 @@ class AdminPanel(tk.Tk):
         asyncio.run(self.guardar_usuario_async())
         
     def validar_campos(self):
-        # Validar que todos los campos estén llenos
+        
         return all([
             self.ncontrol_entry.get(),
             self.name_entry.get(),
@@ -153,11 +153,11 @@ class AdminPanel(tk.Tk):
             cv2.imwrite(f"imagenes/{name}/{i}.jpg", img)
 
         try:
-            # Primero, creamos el usuario
+            
             await create_user(nControl, name, email, role, career)
             self.status_label.config(text="¡Usuario guardado exitosamente!", fg="green")
             
-            # Después de que el usuario ha sido creado correctamente, añadimos las imágenes
+            
             try: 
                 await create_image(nControl, f"imagenes/{name}/0.jpg")
                 await create_image(nControl, f"imagenes/{name}/1.jpg")
@@ -169,9 +169,9 @@ class AdminPanel(tk.Tk):
                 os.rmdir(f"imagenes/{name}")
                 self.status_label.config(text="¡Error al guardar las imágenes!", fg="red")
                 print(f"Error al guardar las imágenes: {e}")
-                return  # Salimos de la función para evitar continuar si las imágenes fallan
+                return 
         except Exception as e:
-            # Si la creación del usuario falla, mostramos el error
+            
             print(f"Error al guardar el usuario: {e}")
             for i in range(3):
                 os.remove(f"imagenes/{name}/{i}.jpg")
@@ -205,5 +205,4 @@ if __name__ == "__main__":
     app = AdminPanel()
     app.mainloop()
 
-    # Cerrar la conexión al final
     loop.run_until_complete(db.disconnect())
