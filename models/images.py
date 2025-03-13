@@ -14,7 +14,6 @@ async def create_image(user_id: str, image_path: str):
     face_encoding = generate_face_encoding(image_path)
     
     face_encoding_json = json.dumps(face_encoding.tolist())  
-
     client = db.get_client()
     image = await client.image.create(
         data={

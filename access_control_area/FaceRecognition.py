@@ -42,7 +42,7 @@ class FaceRecognition:
         if images:
             self.known_face_encodings = [img.faceEncoding for img in images]
             self.known_face_names = [img.user.name for img in images]
-            self.known_face_ids = [img.user.id for img in images]
+            self.known_face_ids = [img.userId for img in images]
         else:
             print("No se encontraron imágenes conocidas.")
 

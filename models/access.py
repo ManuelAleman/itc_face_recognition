@@ -12,7 +12,7 @@ async def create_access(user_id: str):
         where={"userId": user_id},
         order={"timestamp": "desc"} 
     )
-    user = await client.user.find_first(where={"id": user_id})
+    user = await client.user.find_first(where={"nControl": user_id})
     if last_access and (now - last_access.timestamp).total_seconds() < cooldown_time.total_seconds():
         print(f"⏳ Acceso no registrado (espera {cooldown_time.seconds} segundos) - Usuario: {user.name}")
         return None  
