@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import ttk, Frame, font, messagebox
 from models.user import create_user, delete_user
 from models.images import create_image, delete_image
-from config.db import db
 import asyncio
 import cv2
 import os
@@ -143,14 +142,14 @@ class AdminPanel(tk.Tk):
             self.status_label.config(text="¡Necesitas capturar 3 imágenes!", fg="red")
             return
 
-        if not os.path.exists("imagenes"):
-            os.mkdir("imagenes")
+        if not os.path.exists("img"):
+            os.mkdir("img")
 
-        if not os.path.exists(f"imagenes/{name}"):
-            os.mkdir(f"imagenes/{name}")
+        if not os.path.exists(f"img/users/{name}"):
+            os.mkdir(f"img/users/{name}")
 
         for i, img in enumerate(self.imagenes_temporales):
-            cv2.imwrite(f"imagenes/{name}/{i}.jpg", img)
+            cv2.imwrite(f"img/users/{name}/{i}.jpg", img)
 
         try:
             
@@ -159,15 +158,15 @@ class AdminPanel(tk.Tk):
             
             
             try: 
-                await create_image(nControl, f"imagenes/{name}/0.jpg")
-                await create_image(nControl, f"imagenes/{name}/1.jpg")
-                await create_image(nControl, f"imagenes/{name}/2.jpg")
+                await create_image(nControl, f"img/users/{name}/0.jpg")
+                await create_image(nControl, f"img/users/{name}/1.jpg")
+                await create_image(nControl, f"img/users/{name}/2.jpg")
             except Exception as e:
                 await delete_image(nControl)
                 await delete_user(nControl)
                 for i in range(3):
-                    os.remove(f"imagenes/{name}/{i}.jpg")
-                os.rmdir(f"imagenes/{name}")
+                    os.remove(f"img/users/{name}/{i}.jpg")
+                os.rmdir(f"img/users/{name}")
                 self.status_label.config(text="¡Error al guardar las imágenes!", fg="red")
                 print(f"Error al guardar las imágenes: {e}")
                 return 
@@ -175,8 +174,8 @@ class AdminPanel(tk.Tk):
             
             print(f"Error al guardar el usuario: {e}")
             for i in range(3):
-                os.remove(f"imagenes/{name}/{i}.jpg")
-            os.rmdir(f"imagenes/{name}")
+                os.remove(f"img/users/{name}/{i}.jpg")
+            os.rmdir(f"img/users/{name}")
             self.status_label.config(text="¡Error al guardar el usuario!", fg="red")
             return
 
@@ -199,11 +198,3 @@ class AdminPanel(tk.Tk):
     def logout(self):
         self.destroy()
 
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(db.connect())
-    
-    app = AdminPanel()
-    app.mainloop()
-
-    loop.run_until_complete(db.disconnect())

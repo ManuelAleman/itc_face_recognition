@@ -3,7 +3,7 @@ from tkinter import Label, Frame, font
 from PIL import Image, ImageTk
 import asyncio
 import cv2
-from access_control_area.FaceRecognition import FaceRecognition
+from models.FaceRecognition import FaceRecognition
 from config.db import db
 
 class FaceRecognitionApp:
@@ -107,7 +107,3 @@ class FaceRecognitionApp:
         self.root.after(10, self.update_frame)
 
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = FaceRecognitionApp(root)
-    root.mainloop()

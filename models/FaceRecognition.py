@@ -20,7 +20,7 @@ class FaceRecognition:
         self.known_face_names = []
         self.known_face_ids = []
         
-        self.verification_time = 4
+        self.verification_time = 3
         self.access_cooldown = 5
         
         self.unauthorized_attempts = 0  

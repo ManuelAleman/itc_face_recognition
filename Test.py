@@ -1,25 +1,21 @@
+import asyncio
+import os
+from .config.db import db
 from models.user import create_user
 from models.images import create_image
 import pandas as pd
-import os
-async def add_new_user():
-    image_path = "/Users/manuelaleman/Desktop/face_recognition/dataset/Carlos Daniel Beltran Medina.jpg"
+async def main():
+    await db.connect()
     
-    user = await create_user(
-        nControl="18161083",
-        name="Carlos Daniel Beltran Medina", 
-        email="beltranmed.carlos03@gmail.com", 
-        role="Estudiante", 
-        career="Sistemas", 
-    )
-    print(f"User added successfully : {user.nControl} - {user.name} - {user.email} - {user.career}")
+    
+    await add_users_from_dataset()
 
-    await create_image(user_id=user.id, image_path=image_path)
+    await db.disconnect()
 
 
 async def add_users_from_dataset():
     data = pd.read_excel("Datos_Investigacion.xlsx")
-    image_folder_path = "imagenes"
+    image_folder_path = "img/users"
     
     for row in data.itertuples(index=False):
         user_name = row.name.lower()
@@ -50,3 +46,7 @@ async def add_users_from_dataset():
             print(f"No folder found for user {row.name}.")
     
     print("All users and images added successfully.")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
