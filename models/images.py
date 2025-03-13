@@ -23,7 +23,10 @@ async def create_image(user_id: str, image_path: str):
         }
     )
     return image
-
+async def delete_image(user_id: str):
+    client = db.get_client()
+    await client.image.delete(where={'userId': user_id})
+    
 async def get_images():
     client = db.get_client()
     images = await client.image.find_many(

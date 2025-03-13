@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, Frame, font, messagebox
 from models.user import create_user, delete_user
-from models.images import create_image
+from models.images import create_image, delete_image
 from config.db import db
 import asyncio
 import cv2
@@ -163,6 +163,7 @@ class AdminPanel(tk.Tk):
                 await create_image(nControl, f"imagenes/{name}/1.jpg")
                 await create_image(nControl, f"imagenes/{name}/2.jpg")
             except Exception as e:
+                await delete_image(nControl)
                 await delete_user(nControl)
                 for i in range(3):
                     os.remove(f"imagenes/{name}/{i}.jpg")
