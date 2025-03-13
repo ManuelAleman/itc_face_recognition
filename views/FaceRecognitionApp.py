@@ -93,7 +93,7 @@ class FaceRecognitionApp:
             self.face_recognition.last_user_info = None
         elif user_info:
             self.right_panel_frame.grid()
-            self.user_nControl_label.config(text=f"nControl: {user_info.nControl}")
+            self.user_nControl_label.config(text=f"Numero control: {user_info.nControl}")
             self.user_career_label.config(text=f"Carrera: {user_info.career}")
             self.user_name_label.config(text=f"Nombre: {user_info.name}")
             self.user_email_label.config(text=f"Correo: {user_info.email}")
