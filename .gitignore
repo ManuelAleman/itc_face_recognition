@@ -6,7 +6,7 @@ face_recognition_models/
 
 prisma/migrations/*
 lib-test/
-img/unauthorized_attempts|
+img/unauthorized_attempts
 
 */.DS_Store
 .DS_Store
