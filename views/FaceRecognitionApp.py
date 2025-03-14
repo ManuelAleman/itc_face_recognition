@@ -68,12 +68,11 @@ class FaceRecognitionApp:
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
-        self.loop.run_until_complete(self.start_db_connection())
+        self.loop.create_task(self.start_db_connection())
         print("Rostros cargados")
 
         self.status_label.config(text="Sistema iniciado correctamente.")
         self.update_frame()
-        
 
     async def start_db_connection(self):
         await db.connect()
@@ -85,6 +84,11 @@ class FaceRecognitionApp:
             self.status_label.config(text="Error: No se pudo capturar el cuadro.")
             return
 
+        self.root.after(1, self.recognize_faces_and_update, frame)
+
+        self.root.after(10, self.update_frame)
+
+    def recognize_faces_and_update(self, frame):
         status_text, user_info = self.loop.run_until_complete(self.face_recognition.recognize_faces(frame))
         self.status_label.config(text=status_text)
 
@@ -103,7 +107,3 @@ class FaceRecognitionApp:
         imgtk = ImageTk.PhotoImage(image=img)
         self.video_label.imgtk = imgtk
         self.video_label.config(image=imgtk)
-
-        self.root.after(10, self.update_frame)
-
-

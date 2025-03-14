@@ -6,7 +6,7 @@ import os
 from models.images import get_images
 from models.access import create_access, log_unauthorized_access
 from models.user import get_user_info  
-
+from controllers.ArduinoController import ArduinoController
 class FaceRecognition:
     def __init__(self):
         self.cap = cv2.VideoCapture(0)
@@ -28,6 +28,8 @@ class FaceRecognition:
         self.alert_cooldown_time = 5  
 
         self.last_user_info = None  
+        self.arduino = ArduinoController()
+        self.arduino.initialize()
 
         self.alert_folder = "img/unauthorized_attempts"
         if not os.path.exists(self.alert_folder):
@@ -56,7 +58,6 @@ class FaceRecognition:
 
         if self.cooldown_start_time is not None and (current_time - self.cooldown_start_time < self.access_cooldown):
             return self.cooldown_status, self.last_user_info
-
         if not face_locations:
             self.verification_start_time = None
             return "Esperando...", self.last_user_info
@@ -92,15 +93,19 @@ class FaceRecognition:
 
                 await create_access(user_id)
                 self.cooldown_status = f"✅ Acceso concedido a: {user_name}"
+                await self.arduino.send_display_message(f"Bienvenido, {user_name}")
                 self.cooldown_start_time = current_time
                 self.last_user_info = user_info
+                await self.arduino.authorize_access()
                 break
 
         if not valid_face_found:
             self.cooldown_status = "❌ Acceso no autorizado"
+            await self.arduino.send_display_message("Acceso denegado")
             self.cooldown_start_time = current_time
             await self.trigger_alert(frame)
             self.unauthorized_attempts += 1
+            await self.arduino.unauthorize_access()
 
         self.verification_start_time = None
         return self.cooldown_status, user_info

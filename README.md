@@ -59,3 +59,32 @@ docker exec -it <container-name> bash
 ```bash
 psql -U admin -d <database-name>
 ```
+
+## 7. Configura salida al arduino
+```bash
+int greenLedPin = 3;
+int redLedPin = 7;
+
+void setup() {
+  pinMode(greenLedPin, OUTPUT);
+  pinMode(redLedPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    char command = Serial.read();
+    
+    if (command == 'A') {
+      digitalWrite(greenLedPin, HIGH);
+      digitalWrite(redLedPin, LOW);
+    } else if (command == 'D') {
+      digitalWrite(greenLedPin, LOW);
+      digitalWrite(redLedPin, HIGH);
+    } else if (command == 'O') {
+      digitalWrite(greenLedPin, LOW);
+      digitalWrite(redLedPin, LOW);
+    }
+  }
+}
+```
