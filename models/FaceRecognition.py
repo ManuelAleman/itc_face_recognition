@@ -29,7 +29,6 @@ class FaceRecognition:
 
         self.last_user_info = None  
         self.arduino = ArduinoController()
-        self.arduino.initialize()
 
         self.alert_folder = "img/unauthorized_attempts"
         if not os.path.exists(self.alert_folder):
