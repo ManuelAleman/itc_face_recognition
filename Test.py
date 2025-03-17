@@ -1,6 +1,6 @@
 import asyncio
 import os
-from .config.db import db
+from config.db import db
 from models.user import create_user
 from models.images import create_image
 import pandas as pd
