@@ -28,7 +28,7 @@ class FaceRecognition:
         self.alert_cooldown_time = 5  
 
         self.last_user_info = None  
-        self.arduino = ArduinoController()
+        #self.arduino = ArduinoController()
 
         self.alert_folder = "img/unauthorized_attempts"
         if not os.path.exists(self.alert_folder):
@@ -92,19 +92,19 @@ class FaceRecognition:
 
                 await create_access(user_id)
                 self.cooldown_status = f"✅ Acceso concedido a: {user_name}"
-                await self.arduino.send_display_message(f"Bienvenido, {user_name}")
+                # await self.arduino.send_display_message(f"Bienvenido, {user_name}")
                 self.cooldown_start_time = current_time
                 self.last_user_info = user_info
-                await self.arduino.authorize_access()
+                #await self.arduino.authorize_access()
                 break
 
         if not valid_face_found:
             self.cooldown_status = "❌ Acceso no autorizado"
-            await self.arduino.send_display_message("Acceso denegado")
+            #await self.arduino.send_display_message("Acceso denegado")
             self.cooldown_start_time = current_time
             await self.trigger_alert(frame)
             self.unauthorized_attempts += 1
-            await self.arduino.unauthorize_access()
+            #await self.arduino.unauthorize_access()
 
         self.verification_start_time = None
         return self.cooldown_status, user_info
