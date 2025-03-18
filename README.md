@@ -42,7 +42,9 @@ git clone https://github.com/ageitgey/face_recognition_models.git
 ```
 ### 4.2 Ejecutar setup.py
 ```bash
-python face_recognition_models/setup.py
+cd face_recognition_models
+python3 setup.py
+cd ../
 ```
 ## 5. Inicializar la base de datos
 ```bash
