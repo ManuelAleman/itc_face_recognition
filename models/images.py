@@ -1,5 +1,6 @@
 import face_recognition
 import json
+import os
 from config.db import db
 def generate_face_encoding(image_path: str):
     image = face_recognition.load_image_file(image_path)
@@ -8,6 +9,8 @@ def generate_face_encoding(image_path: str):
     if len(face_encodings) > 0:
         return face_encodings[0]  
     else:
+        #Borrar la foto
+        os.remove(image_path)
         raise Exception("No se detectó ninguna cara en la imagen. " + image_path)
     
 async def create_image(user_id: str, image_path: str):
