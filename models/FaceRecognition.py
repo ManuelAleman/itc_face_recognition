@@ -92,7 +92,7 @@ class FaceRecognition:
 
                 await create_access(user_id)
                 self.cooldown_status = f"✅ Acceso concedido a: {user_name}"
-                await self.arduino.send_display_message(f"Bienvenido, {user_name}")
+                await self.arduino.send_display_message({user_name})
                 self.cooldown_start_time = current_time
                 self.last_user_info = user_info
                 await self.arduino.authorize_access()
