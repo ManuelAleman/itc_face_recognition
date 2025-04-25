@@ -8,31 +8,41 @@ datasource db {
 }
 
 model User {
-  name      String
-  email     String   @unique
-  role      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  career    String
-  nControl  String   @id
-  accesses  Access[]
-  images    Image[]
+  name       String
+  email      String      @unique
+  role       String
+  career     String
+  nControl   String      @id
+  accesses   Access[]
+  classrooms Classroom[]
+  images     Image[]
 }
 
 model Access {
+  id          String     @id @default(uuid())
+  userId      String
+  listTime   DateTime
+  classroomId String?
+  classroomFK Classroom? @relation(fields: [classroomId], references: [id])
+  user        User       @relation(fields: [userId], references: [nControl])
+}
+
+model Classroom {
   id        String   @id @default(uuid())
-  userId    String
-  timestamp DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [nControl])
+  subject   String
+  room      String
+  teacherId String
+  schedule  DateTime
+  accesses  Access[]
+  teacherFK User     @relation(fields: [teacherId], references: [nControl])
 }
 
 model Image {
-  id           String   @id @default(uuid())
+  id           String @id @default(uuid())
   userId       String
   imagePath    String
-  createdAt    DateTime @default(now())
   faceEncoding Json
-  user         User     @relation(fields: [userId], references: [nControl])
+  user         User   @relation(fields: [userId], references: [nControl])
 }
 
 model UnauthorizedAccess {

@@ -39,6 +39,11 @@ async def get_user_by_face_encodingd(face_encoding_list: list):
 
     return best_match
 
+async def get_user_by_name(name: str):
+    client = db.get_client()
+    user = await client.user.find_first(where={'name': name})
+    return user
+
 async def get_user_info(user_id: str):
     client = db.get_client()
     user = await client.user.find_first(where={'nControl': user_id})

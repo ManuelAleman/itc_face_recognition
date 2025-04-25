@@ -8,7 +8,8 @@ from models.access import create_access, log_unauthorized_access
 from models.user import get_user_info  
 from controllers.ArduinoController import ArduinoController
 class FaceRecognition:
-    def __init__(self):
+    def __init__(self,classroom_id):
+        self.classroom_id = classroom_id
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             raise Exception("No se pudo abrir la cámara.")
@@ -90,7 +91,7 @@ class FaceRecognition:
                 if user_info is None or user_info.id != user_id:
                     user_info = await get_user_info(user_id)
 
-                await create_access(user_id)
+                await create_access(user_id,classroom_id=self.classroom_id)
                 self.cooldown_status = f"✅ Acceso concedido a: {user_name}"
                 await self.arduino.send_display_message({user_name})
                 self.cooldown_start_time = current_time

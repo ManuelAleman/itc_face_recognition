@@ -1,22 +1,26 @@
 import tkinter as tk
-from tkinter import Label, Frame, font
+from tkinter import ttk,Label, Frame, font
 from PIL import Image, ImageTk
 import asyncio
 import cv2
 from models.FaceRecognition import FaceRecognition
 from config.db import db
 
-class FaceRecognitionApp:
-    def __init__(self, root):
+class FaceRecognitionApp():
+    def __init__(self,root, classroomId: str):
+        self.classroomId = classroomId
         self.root = root
         self.root.title("Sistema de Reconocimiento Facial - Instituto Tecnológico de Culiacán")
         self.root.geometry("1000x600")
         self.root.configure(bg="#003366")
         self.root.minsize(1000, 600)
+        self.recognition_enabled = False
 
         self.title_font = font.Font(family="Helvetica", size=18, weight="bold")
         self.status_font = font.Font(family="Arial", size=14, weight="bold")
         self.user_info_font = font.Font(family="Arial", size=12)
+
+        self.root.bind("<KeyPress-r>", self.toggle_recognition)
 
         self.main_frame = Frame(self.root, bg="#003366")
         self.main_frame.pack(fill="both", expand=True, padx=20, pady=20)
@@ -58,12 +62,11 @@ class FaceRecognitionApp:
             fg="#FFFFFF",
             bg="#003366"
         )
-        self.status_label.grid(row=2, column=0, columnspan=2, pady=10)
-
+        self.status_label.grid(row=3, column=0, columnspan=2, pady=10)
         self.main_frame.grid_rowconfigure(1, weight=1)
         self.main_frame.grid_columnconfigure(0, weight=1)
 
-        self.face_recognition = FaceRecognition()
+        self.face_recognition = FaceRecognition(self.classroomId)
 
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -88,8 +91,14 @@ class FaceRecognitionApp:
 
         self.root.after(10, self.update_frame)
 
+    def toggle_recognition(self, event=None):
+        self.recognition_enabled = not self.recognition_enabled
+
     def recognize_faces_and_update(self, frame):
-        status_text, user_info = self.loop.run_until_complete(self.face_recognition.recognize_faces(frame))
+        if self.recognition_enabled:
+            status_text, user_info = self.loop.run_until_complete(self.face_recognition.recognize_faces(frame))
+        else:
+            status_text, user_info = "Presiona 'r' para reconocer", None
         self.status_label.config(text=status_text)
 
         if "Verificando usuario" in status_text or not user_info:
@@ -101,6 +110,7 @@ class FaceRecognitionApp:
             self.user_career_label.config(text=f"Carrera: {user_info.career}")
             self.user_name_label.config(text=f"Nombre: {user_info.name}")
             self.user_email_label.config(text=f"Correo: {user_info.email}")
+
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(frame)
