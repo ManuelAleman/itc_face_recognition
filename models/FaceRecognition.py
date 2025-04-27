@@ -45,6 +45,7 @@ class FaceRecognition:
             self.known_face_encodings = [img.faceEncoding for img in images]
             self.known_face_names = [img.user.name for img in images]
             self.known_face_ids = [img.userId for img in images]
+            print(f"Se cargaron {len(self.known_face_encodings)} imágenes conocidas.")
         else:
             print("No se encontraron imágenes conocidas.")
 

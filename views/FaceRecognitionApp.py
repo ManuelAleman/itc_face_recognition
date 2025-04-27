@@ -8,29 +8,29 @@ from config.db import db
 
 class FaceRecognitionApp():
     def __init__(self,root, classroomId: str):
-        self.classroomId = classroomId
         self.root = root
+        self.classroomId = classroomId
+        self.recognition_enabled = False
+
         self.root.title("Sistema de Reconocimiento Facial - Instituto Tecnológico de Culiacán")
         self.root.geometry("1000x600")
-        self.root.configure(bg="#003366")
         self.root.minsize(1000, 600)
-        self.recognition_enabled = False
+
+        self.root.bind("<KeyPress-r>", self.enable_recognition)
+        self.root.bind("<KeyRelease-r>", self.disable_recognition)
 
         self.title_font = font.Font(family="Helvetica", size=18, weight="bold")
         self.status_font = font.Font(family="Arial", size=14, weight="bold")
         self.user_info_font = font.Font(family="Arial", size=12)
-
-        self.root.bind("<KeyPress-r>", self.toggle_recognition)
-
-        self.main_frame = Frame(self.root, bg="#003366")
+        
+        self.main_frame = Frame(self.root)
         self.main_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
         self.title_label = Label(
             self.main_frame,
             text="Instituto Tecnológico de Culiacán",
             font=self.title_font,
-            fg="#FFFFFF",
-            bg="#003366"
+            fg="#FFFFFF"
         )
         self.title_label.grid(row=0, column=0, columnspan=2, pady=(10, 20))
 
@@ -67,19 +67,17 @@ class FaceRecognitionApp():
         self.main_frame.grid_columnconfigure(0, weight=1)
 
         self.face_recognition = FaceRecognition(self.classroomId)
-
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-
-        self.loop.create_task(self.start_db_connection())
-        print("Rostros cargados")
+        self.loop = asyncio.get_event_loop()
+        self.loop.run_until_complete(self.face_recognition.load_known_faces())
 
         self.status_label.config(text="Sistema iniciado correctamente.")
         self.update_frame()
 
-    async def start_db_connection(self):
-        await db.connect()
-        await self.face_recognition.load_known_faces()
+    def enable_recognition(self, event):
+        self.recognition_enabled = True
+    
+    def disable_recognition(self, event):
+        self.recognition_enabled = False
 
     def update_frame(self):
         ret, frame = self.face_recognition.cap.read()
@@ -90,9 +88,6 @@ class FaceRecognitionApp():
         self.root.after(1, self.recognize_faces_and_update, frame)
 
         self.root.after(10, self.update_frame)
-
-    def toggle_recognition(self, event=None):
-        self.recognition_enabled = not self.recognition_enabled
 
     def recognize_faces_and_update(self, frame):
         if self.recognition_enabled:

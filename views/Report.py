@@ -1,16 +1,21 @@
 import tkinter as tk
+import ttkbootstrap as tb
+from ttkbootstrap.tableview import Tableview
+
 from tkinter import ttk,Label, Frame, font
 from models.classroom import get_classrooms
 from models.access import get_access_by_classroom_and_date
+
 import asyncio
 
 class Report(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Reporte de Asistencia")
-        self.geometry("800x600")
+        self.geometry("700x600")
         self.configure(bg="#003366")
-        self.minsize(800, 600)
+        self.minsize(700, 600)
+        self.theme = tb.Style(theme="darkly")
 
         self.title_font = font.Font(family="Helvetica", size=18, weight="bold")
 
@@ -24,7 +29,7 @@ class Report(tk.Tk):
             fg="#FFFFFF",
             bg="#003366"
         )
-        self.title_label.grid(row=0, column=0, columnspan=2, pady=(10, 20))
+        self.title_label.grid(row=0, column=0, columnspan=4, pady=(10, 20))
 
        
         self.classroom_combo = ttk.Combobox(self.main_frame)
@@ -34,54 +39,62 @@ class Report(tk.Tk):
         # Llamar a la funcion asincrona para obtener las clases
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.getClassroomFromDB())
-        # seleccionar el dia de la clase
-        self.day_combo = ttk.Combobox(self.main_frame)
-        self.day_combo.set("Dia")
-        dias = list(range(1, 32))
-        self.day_combo['values'] = dias
-        self.day_combo.grid(row=1, column=1, padx=10, pady=5)
-        # seleccionar el mes de la clase
-        self.month_combo = ttk.Combobox(self.main_frame)
-        self.month_combo.set("Mes")
-        meses = list(range(1, 13))
-        self.month_combo['values'] = meses
-        self.month_combo.grid(row=1, column=2, padx=10, pady=5)
-        # seleccionar el año de la clase
-        self.year_combo = ttk.Combobox(self.main_frame)
-        self.year_combo.set("Año")
-        anios = list(range(2023, 2030))
-        self.year_combo['values'] = anios
-        self.year_combo.grid(row=1, column=3, padx=10, pady=5)
+        
+
+        self.date_entry = tb.DateEntry(self.main_frame, width=20)
+        self.date_entry.grid(row=1, column=2, padx=10, pady=5)
         # boton de generar reporte
-        self.generate_report_button = ttk.Button(self.main_frame, text="Generar Reporte", command=self.generate_report)
-        self.generate_report_button.grid(row=2, column=0, columnspan=4, pady=(10, 20))
+
+        self.generate_table_button = ttk.Button(self.main_frame, text="Buscar registros", command=self.generate_table)
+        self.generate_table_button.grid(row=1, column=3, padx=20, pady=5)
         # boton de salir
 
 
-    def generate_report(self):
+    def generate_table(self):
         # Aqui se generara el reporte
         selected_classroom = self.classroom_combo.get()
-        selected_day = self.day_combo.get()
-        selected_month = self.month_combo.get()
-        selected_year = self.year_combo.get()
+        date = self.date_entry.entry.get()
 
-        if not selected_classroom or not selected_day or not selected_month or not selected_year:
-            print("Por favor selecciona todos los campos")
+        if selected_classroom == "Selecciona una clase" or not date:
+            self.table.destroy() if hasattr(self, 'table') else None
+            self.save_button.destroy() if hasattr(self, 'save_button') else None
+            text_empty = Label(self.main_frame, text="Por favor selecciona una clase y una fecha", fg="red", bg="#003366")
+            text_empty.grid(row=2, column=0, columnspan=4, pady=(10, 20))
             return
 
         classroom_id = self.classroom_map[selected_classroom]
-        # Buscar la lista de asistencia en la base de datos
-        date = f"{selected_year}-{selected_month}-{selected_day}"
-        access_records = asyncio.run(self.get_access_by_classroom_and_date(classroom_id, date))
+        loop = asyncio.get_event_loop()
+        access_records = loop.run_until_complete(self.get_access_by_classroom_and_date(classroom_id, date))
         if not access_records:
-            print("No se encontraron registros de asistencia para esta clase")
+            self.table.destroy() if hasattr(self, 'table') else None
+            self.save_button.destroy() if hasattr(self, 'save_button') else None
+            text_not_found = Label(self.main_frame, text="No se encontraron registros de asistencia para esta clase", fg="red", bg="#003366")
+            text_not_found.grid(row=2, column=0, columnspan=4, pady=(10, 20))
             return
-        # Aqui se generara el reporte
-        # Por ahora solo se imprimira en la consola
-        print(f"Registros de asistencia para la clase {classroom_id} del {selected_day}/{selected_month}/{selected_year}:")
+
+        col = [
+            {"text": "Numero de control", "anchor": "w", "stretch": True},
+            {"text": "Nombre", "anchor": "center", "stretch": True},
+            {"text": "Hora de Acceso", "anchor": "e", "stretch": True}
+        ]
+        data = []
         for record in access_records:
-            print(record)
-            print(f"Usuario: {record.userId} - Fecha: {record.listTime}")
+            data.append((record.user.nControl, record.user.name, record.accessTime.strftime("%H:%M:%S")))
+        # Crear la tabla
+        self.table = Tableview(self.main_frame, coldata=col, rowdata=data)
+        self.table.grid(row=2, column=0, columnspan=4, pady=(10, 20))
+
+        # Boton de guardar
+        self.save_button = ttk.Button(self.main_frame, text="Guardar Reporte", command=self.save_report)
+        self.save_button.grid(row=3, column=0, columnspan=4, pady=(10, 20))
+
+    def save_report(self):
+        self.table.export_all_records()
+        print("Reporte guardado como reporte.csv")
+
+
+
+
 
     
     async def get_access_by_classroom_and_date(self, classroom_id, date):
@@ -92,12 +105,5 @@ class Report(tk.Tk):
 
     async def getClassroomFromDB(self):
       classrooms = await get_classrooms()
-      classroom_list = []
-      # Guardar ids de las clases
-      self.classroom_map = {}
-      for classroom in classrooms:
-        schedule = classroom.schedule.strftime("%H:%M")
-        name = f"{classroom.subject} - {classroom.room} - {schedule}"
-        classroom_list.append(name)
-        self.classroom_map[name] = classroom.id
-      self.classroom_combo['values'] = classroom_list
+      self.classroom_map = {f"{classroom.subject} - {classroom.room} - {classroom.schedule.strftime('%H:%M')}": classroom.id for classroom in classrooms}
+      self.classroom_combo["values"] = list(self.classroom_map.keys())

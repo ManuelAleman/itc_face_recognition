@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, Frame, font, messagebox
+import ttkbootstrap as tb
 from models.user import create_user, delete_user
 from models.images import create_image, delete_image
 import asyncio
@@ -12,6 +13,7 @@ class AdminPanel(tk.Tk):
         self.title("Admin Panel")
         self.geometry("1000x600")
         self.resizable(False, False)
+        self.theme = tb.Style(theme="darkly")
 
         
         self.title_font = font.Font(family="Helvetica", size=18, weight="bold")

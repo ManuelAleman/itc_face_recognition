@@ -8,11 +8,11 @@ datasource db {
 }
 
 model User {
+  nControl   String      @id
   name       String
   email      String      @unique
   role       String
   career     String
-  nControl   String      @id
   accesses   Access[]
   classrooms Classroom[]
   images     Image[]
@@ -21,9 +21,9 @@ model User {
 model Access {
   id          String     @id @default(uuid())
   userId      String
-  listTime   DateTime
+  accessTime  DateTime
   classroomId String?
-  classroomFK Classroom? @relation(fields: [classroomId], references: [id])
+  classroom   Classroom? @relation(fields: [classroomId], references: [id])
   user        User       @relation(fields: [userId], references: [nControl])
 }
 
@@ -32,9 +32,9 @@ model Classroom {
   subject   String
   room      String
   teacherId String
-  schedule  DateTime
+  schedule  DateTime @default(now()) @db.Time(2)
   accesses  Access[]
-  teacherFK User     @relation(fields: [teacherId], references: [nControl])
+  teacher   User     @relation(fields: [teacherId], references: [nControl])
 }
 
 model Image {
