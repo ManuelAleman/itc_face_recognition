@@ -3,10 +3,14 @@ import face_recognition
 import numpy as np
 import time
 import os
+import dlib
+from scipy.spatial import distance as dist
 from models.images import get_images
 from models.access import create_access, log_unauthorized_access
 from models.user import get_user_info  
 from controllers.ArduinoController import ArduinoController
+
+
 class FaceRecognition:
     def __init__(self,classroom_id):
         self.classroom_id = classroom_id
@@ -39,6 +43,17 @@ class FaceRecognition:
         self.cooldown_start_time = None
         self.cooldown_status = None
 
+        # Detección de parpadeo
+        self.detector = dlib.get_frontal_face_detector()
+        self.predictor = dlib.shape_predictor("models/shape_predictor_68_face_landmarks.dat")
+        self.eye_blink_detected = False
+
+    def eye_aspect_ratio(self, eye):
+        A = dist.euclidean(eye[1], eye[5])
+        B = dist.euclidean(eye[2], eye[4])
+        C = dist.euclidean(eye[0], eye[3])
+        return (A + B) / (2.0 * C)
+
     async def load_known_faces(self):
         images = await get_images()
         if images:
@@ -52,6 +67,23 @@ class FaceRecognition:
     async def recognize_faces(self, frame):
         small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
         rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Detección de parpadeo
+        rects = self.detector(gray, 0)
+        for rect in rects:
+            shape = self.predictor(gray, rect)
+            shape_np = np.zeros((68, 2), dtype="int")
+            for i in range(0, 68):
+                shape_np[i] = (shape.part(i).x, shape.part(i).y)
+            left_eye = shape_np[42:48]
+            right_eye = shape_np[36:42]
+            left_ear = self.eye_aspect_ratio(left_eye)
+            right_ear = self.eye_aspect_ratio(right_eye)
+            ear = (left_ear + right_ear) / 2.0
+            EAR_THRESHOLD = 0.21
+            if ear < EAR_THRESHOLD:
+                self.eye_blink_detected = True
         
         face_locations = face_recognition.face_locations(rgb_frame, model="hog")
         face_encodings = face_recognition.face_encodings(rgb_frame, face_locations) if face_locations else []
@@ -72,6 +104,17 @@ class FaceRecognition:
             countdown = int(self.verification_time - time_elapsed)
             return f"🔄 Verificando usuario... {countdown} segundos restantes", self.last_user_info
 
+        # Verifica si hubo parpadeo
+        if not self.eye_blink_detected:
+            self.cooldown_status = "❌ Acceso denegado (no se detectó parpadeo)"
+            await self.arduino.send_display_message("Parpadeo no detectado")
+            self.cooldown_start_time = current_time
+            await self.trigger_alert(frame)
+            self.unauthorized_attempts += 1
+            await self.arduino.unauthorize_access()
+            self.verification_start_time = None
+            return self.cooldown_status, None
+        
         valid_face_found = False
         user_info = self.last_user_info
 
@@ -109,6 +152,7 @@ class FaceRecognition:
             await self.arduino.unauthorize_access()
 
         self.verification_start_time = None
+        self.eye_blink_detected = False
         return self.cooldown_status, user_info
 
     async def trigger_alert(self, frame):

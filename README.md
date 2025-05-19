@@ -32,7 +32,7 @@ source face_recognition/bin/activate
 
 ## 3. Instalar las dependencias necesarias
 ```bash
-pip install face_recognition opencv-python python-dotenv setuptools openpyxl pandas pyserial ttkbootstrap
+pip install face_recognition opencv-python python-dotenv setuptools openpyxl pandas pyserial ttkbootstrap dlib scipy numpy imutils
 pip install -U prisma
 ```
 ## 4. Repositorio con modelos de detección
